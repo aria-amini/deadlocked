@@ -30,6 +30,8 @@
 	--input: oklch(0.22 0.012 75 / 18%);
 	--ring: oklch(0.55 0.12 68);
 
+	--win: oklch(0.55 0.12 152);
+	--loss: oklch(0.52 0.16 26);
 	--lamp-mid: oklch(0.66 0.11 70);
 	--lamp-dim: oklch(0.8 0.06 78);
 	--lamp-ghost: oklch(0.88 0.03 82);
@@ -100,6 +102,8 @@
 	--input: oklch(1 0 0 / 14%);
 	--ring: oklch(0.775 0.155 75);
 
+	--win: oklch(0.76 0.13 152);
+	--loss: oklch(0.7 0.16 26);
 	--lamp-mid: oklch(0.62 0.125 73);
 	--lamp-dim: oklch(0.45 0.08 72);
 	--lamp-ghost: oklch(0.31 0.035 72);
@@ -155,6 +159,8 @@
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
+	--color-win: var(--win);
+	--color-loss: var(--loss);
 	--color-lamp-mid: var(--lamp-mid);
 	--color-lamp-dim: var(--lamp-dim);
 	--color-lamp-ghost: var(--lamp-ghost);
@@ -227,10 +233,6 @@
 		inset 0 -1px 0 var(--bevel-shade);
 }
 
-@utility lamp-pulse {
-	animation: lamp-pulse 2.2s ease-in-out infinite;
-}
-
 @layer base {
 	* {
 		@apply border-border outline-ring/50;
@@ -294,52 +296,9 @@
 	}
 }
 
-@keyframes lamp-on {
-	0% {
-		opacity: 0;
-	}
-	8% {
-		opacity: 0.55;
-	}
-	16% {
-		opacity: 0.15;
-	}
-	26% {
-		opacity: 0.95;
-	}
-	36% {
-		opacity: 0.5;
-	}
-	100% {
-		opacity: 1;
-	}
-}
-
-@keyframes lamp-pulse {
-	0%,
-	100% {
-		opacity: 1;
-	}
-	50% {
-		opacity: 0.45;
-	}
-}
-
 @layer components {
-	.lamp-board tbody tr {
-		animation: lamp-on 0.8s ease-out both;
-		animation-delay: calc(min(var(--row-i, 0), 48) * 14ms);
-	}
-
-	.lamp-fill {
-		width: var(--lamp-fill, 0%);
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.lamp-pulse,
-	.lamp-board tbody tr {
-		animation: none;
+	.gauge-fill {
+		width: var(--fill, 0%);
 	}
 }
 

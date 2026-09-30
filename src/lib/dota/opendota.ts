@@ -1,4 +1,7 @@
+import type { Bracket, MetaBracket } from './brackets'
 import { cachedJson } from './cache'
+
+export type { Bracket, MetaBracket }
 
 const OPEN_DOTA_API = 'https://api.opendota.com/api'
 
@@ -98,8 +101,6 @@ export type MatchHistoryError = 'not-found' | 'rate-limited' | 'unavailable'
 export type MatchHistoryResult =
 	| { ok: true; history: MatchHistory }
 	| { ok: false; error: MatchHistoryError }
-
-export type Bracket = (typeof BRACKET_TIERS)[number]['name']
 
 export type HeroBracketWinrate = {
 	hero: string
@@ -355,17 +356,45 @@ export async function loadHeroBracketWinrates(
 	return result
 }
 
-export type MetaBracket = Bracket | 'Pro'
+export type MetaPageData = {
+	bracket: MetaBracket
+	bracketTotals: Record<MetaBracket, number>
+	heroes: Array<MetaRow>
+}
 
 export async function loadHeroMeta(
 	bracket: MetaBracket,
-): Promise<Array<MetaRow>> {
+): Promise<MetaPageData> {
 	const [heroes, rows] = await Promise.all([heroMap(), heroStatRows()])
+
+	const bracketTotals: Record<MetaBracket, number> = {
+		Herald: 0,
+		Guardian: 0,
+		Crusader: 0,
+		Archon: 0,
+		Legend: 0,
+		Ancient: 0,
+		Divine: 0,
+		Immortal: 0,
+		Pro: 0,
+	}
+
+	for (const { level, name } of BRACKET_TIERS) {
+		bracketTotals[name] = rows.reduce(
+			(sum, row) => sum + row[`${level}_pick`],
+			0,
+		)
+	}
+
+	bracketTotals.Pro = rows.reduce((sum, row) => sum + row.pro_pick, 0)
+
 	const tier = BRACKET_TIERS.find((entry) => entry.name === bracket)
 
 	// OpenDota leaves the Immortal bucket (tier 8) empty; pro matches are the
 	// top tier it actually publishes.
-	if (!tier && bracket !== 'Pro') return []
+	if (!tier && bracket !== 'Pro') {
+		return { bracket, bracketTotals, heroes: [] }
+	}
 
 	const picksOf = (row: HeroStatRow): number => {
 		if (bracket === 'Pro') return row.pro_pick
@@ -399,5 +428,9 @@ export async function loadHeroMeta(
 		})
 	}
 
-	return meta.sort((a, b) => b.picks - a.picks)
+	return {
+		bracket,
+		bracketTotals,
+		heroes: meta.sort((a, b) => b.picks - a.picks),
+	}
 }

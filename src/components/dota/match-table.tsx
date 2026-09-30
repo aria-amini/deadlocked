@@ -1,7 +1,6 @@
 import { cn } from 'cn'
 
 import { HeroIcon } from '@/components/dota/hero-icon'
-import { LampDot } from '@/components/ui/lamp'
 import {
 	Table,
 	TableBody,
@@ -12,15 +11,9 @@ import {
 } from '@/components/ui/table'
 import type { MatchRecord } from '@/lib/dota/opendota'
 
-function ResultLamp({ won }: { won: boolean }) {
+function Result({ won }: { won: boolean }) {
 	return (
-		<span
-			className={cn(
-				'label-mono inline-flex items-center gap-2',
-				won ? 'text-foreground' : 'text-muted-foreground',
-			)}
-		>
-			<LampDot lit={won} />
+		<span className={cn('label-mono', won ? 'text-win' : 'text-loss')}>
 			{won ? 'Win' : 'Loss'}
 		</span>
 	)
@@ -55,7 +48,7 @@ export function MatchTable({ matches }: { matches: Array<MatchRecord> }) {
 								</span>
 							</TableCell>
 							<TableCell>
-								<ResultLamp won={match.won} />
+								<Result won={match.won} />
 							</TableCell>
 							<TableCell numeric className="text-right">
 								{match.kills}/{match.deaths}/{match.assists}

@@ -12,13 +12,7 @@ import {
 } from '@/components/dota/charts'
 import { MatchTable } from '@/components/dota/match-table'
 import { Button } from '@/components/ui/button'
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { getStatsPage } from '@/lib/dota/server'
@@ -74,13 +68,11 @@ function AccountForm({ accountId }: { accountId: number | undefined }) {
 function GaugeModule({
 	label,
 	value,
-	hint,
-	lit = false,
+	tone,
 }: {
 	label: string
 	value: string
-	hint?: string
-	lit?: boolean
+	tone?: 'win' | 'loss'
 }) {
 	return (
 		<div className="bg-card p-4">
@@ -88,14 +80,12 @@ function GaugeModule({
 			<p
 				className={cn(
 					'mt-2 font-mono text-2xl leading-none tabular-nums',
-					lit ? 'text-primary' : 'text-foreground',
+					tone === 'win' && 'text-win',
+					tone === 'loss' && 'text-loss',
 				)}
 			>
 				{value}
 			</p>
-			{hint ? (
-				<p className="text-muted-foreground mt-1.5 text-xs">{hint}</p>
-			) : null}
 		</div>
 	)
 }
@@ -118,16 +108,9 @@ function StatsPage() {
 
 	return (
 		<div className="min-h-dvh">
-			<BoardHeader active="operator" />
+			<BoardHeader active="matches" />
 			<main className="mx-auto w-full max-w-6xl space-y-6 px-6 py-8">
-				<div className="space-y-4">
-					<h1 className="text-4xl leading-none">Operator desk</h1>
-					<p className="text-muted-foreground max-w-prose text-sm">
-						Recent matches from the OpenDota API. Find your 32-bit account ID on
-						opendota.com or your Steam profile URL.
-					</p>
-					<AccountForm accountId={account} />
-				</div>
+				<AccountForm accountId={account} />
 
 				{!account ? (
 					<EmptyState>
@@ -173,12 +156,11 @@ function StatsPage() {
 							<GaugeModule
 								label="Record"
 								value={`${result.history.summary.wins}–${result.history.summary.losses}`}
-								hint={`${result.history.summary.matches} matches`}
 							/>
 							<GaugeModule
 								label="Win rate"
 								value={`${result.history.summary.winRate}%`}
-								lit
+								tone={result.history.summary.winRate >= 50 ? 'win' : 'loss'}
 							/>
 							<GaugeModule
 								label="Avg K/D/A"
@@ -198,7 +180,6 @@ function StatsPage() {
 							<Card>
 								<CardHeader>
 									<CardTitle>Win rate</CardTitle>
-									<CardDescription>Wins lit against losses</CardDescription>
 								</CardHeader>
 								<CardContent>
 									<ClientOnly fallback={<Spinner />}>
@@ -209,7 +190,6 @@ function StatsPage() {
 							<Card className="md:col-span-2">
 								<CardHeader>
 									<CardTitle>KDA trend</CardTitle>
-									<CardDescription>Oldest to newest match</CardDescription>
 								</CardHeader>
 								<CardContent>
 									<ClientOnly fallback={<Spinner />}>
@@ -222,7 +202,6 @@ function StatsPage() {
 						<Card>
 							<CardHeader>
 								<CardTitle>Most played heroes</CardTitle>
-								<CardDescription>Wins lit against losses</CardDescription>
 							</CardHeader>
 							<CardContent>
 								<ClientOnly fallback={<Spinner />}>
@@ -234,9 +213,6 @@ function StatsPage() {
 						<Card>
 							<CardHeader>
 								<CardTitle>Bracket winrates</CardTitle>
-								<CardDescription>
-									Global pub winrates per rank bracket, Herald through Immortal
-								</CardDescription>
 							</CardHeader>
 							<CardContent>
 								<ClientOnly fallback={<Spinner />}>

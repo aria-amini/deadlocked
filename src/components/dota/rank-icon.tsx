@@ -25,7 +25,12 @@ export function RankIcon({
 	const file = RANK_FILES[bracket]
 
 	if (!file) {
-		return <Trophy weight="fill" className={cn('size-5 shrink-0', className)} />
+		return (
+			<Trophy
+				weight="fill"
+				className={cn('size-6 shrink-0 text-foreground', className)}
+			/>
+		)
 	}
 
 	return (

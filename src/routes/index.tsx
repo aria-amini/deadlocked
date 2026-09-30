@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { cn } from 'cn'
-import type { CSSProperties } from 'react'
 import { z } from 'zod'
 
 import { BoardHeader, LadderBoard } from '@/components/dota/board-frame'
@@ -10,7 +9,6 @@ import {
 	ChannelRail,
 	type ChannelItemProps,
 } from '@/components/ui/channel-rail'
-import { LampDot } from '@/components/ui/lamp'
 import {
 	Table,
 	TableBody,
@@ -19,7 +17,9 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
-import { getMetaPage, type BracketName } from '@/lib/dota/server'
+import { BRACKET_MMR, type MetaBracket } from '@/lib/dota/brackets'
+import { getMetaPage } from '@/lib/dota/server'
+import type { BracketName } from '@/lib/dota/server'
 
 const BRACKETS: Array<BracketName> = [
 	'Herald',
@@ -40,17 +40,33 @@ export const Route = createFileRoute('/')({
 	component: MetaPage,
 })
 
-function WinRateLamp({ winrate }: { winrate: number }) {
-	const lit = winrate >= 50
+const compactPicks = new Intl.NumberFormat('en-US', {
+	notation: 'compact',
+	maximumFractionDigits: 1,
+})
+
+function bracketTitle(
+	name: BracketName,
+	bracketTotals: Record<MetaBracket, number>,
+): string {
+	const range = BRACKET_MMR[name]
+
+	return [
+		range ? `${name} · ${range} MMR` : `${name} matches`,
+		`${compactPicks.format(bracketTotals[name])} picks`,
+	].join(' · ')
+}
+
+function WinRate({ winrate }: { winrate: number }) {
+	const strong = winrate >= 50
 
 	return (
 		<span
 			className={cn(
-				'inline-flex items-center justify-end gap-2 font-mono text-sm tabular-nums',
-				lit ? 'text-primary' : 'text-muted-foreground',
+				'inline-flex items-center justify-end font-mono text-sm tabular-nums',
+				strong ? 'text-win' : 'text-loss',
 			)}
 		>
-			<LampDot lit={lit} />
 			{winrate}%
 		</span>
 	)
@@ -61,10 +77,10 @@ function PickShareGauge({ share, max }: { share: number; max: number }) {
 
 	return (
 		<div className="flex items-center justify-end gap-3">
-			<div className="bg-lamp-ghost/50 hidden h-1.5 w-28 lg:block">
+			<div className="bg-border hidden h-1.5 w-28 lg:block">
 				<div
-					className="lamp-fill bg-lamp-mid h-full"
-					style={{ '--lamp-fill': `${fill}%` }}
+					className="gauge-fill bg-primary/70 h-full"
+					style={{ '--fill': `${fill}%` }}
 				/>
 			</div>
 			<span className="text-muted-foreground w-12 text-right font-mono text-xs tabular-nums">
@@ -76,79 +92,49 @@ function PickShareGauge({ share, max }: { share: number; max: number }) {
 
 function MetaPage() {
 	const { bracket } = Route.useSearch()
-	const rows = Route.useLoaderData()
+	const { bracketTotals, heroes: rows } = Route.useLoaderData()
 	const active: BracketName = bracket ?? 'Archon'
 
 	const channels: Array<ChannelItemProps> = BRACKETS.map((name) => ({
 		label: name,
-		icon: <RankIcon bracket={name} />,
+		title: bracketTitle(name, bracketTotals),
+		icon: (
+			<span
+				className={cn(
+					'grid size-6 place-items-center rounded-full',
+					name === active && 'bg-card shadow-sm',
+				)}
+			>
+				<RankIcon bracket={name} className="size-5" />
+			</span>
+		),
 		active: name === active,
 		render: <Link to="/" search={{ bracket: name }} />,
 	}))
 
-	const totalPicks = rows.reduce((sum, row) => sum + row.picks, 0)
 	const maxShare = Math.max(...rows.map((row) => row.pickShare), 0)
 
 	return (
 		<div className="min-h-dvh">
-			<BoardHeader active="ladder" />
+			<BoardHeader active="heroes" />
 			<main className="mx-auto w-full max-w-6xl space-y-6 px-6 py-8">
-				<div className="flex flex-wrap items-end justify-between gap-4">
-					<div className="space-y-2">
-						<h1 className="text-4xl leading-none">Pub meta ladder</h1>
-						<p className="text-muted-foreground max-w-prose text-sm">
-							Current pub meta by rank bracket, from the OpenDota API. Run your
-							own matches on the{' '}
-							<Link
-								to="/stats"
-								className="text-primary underline underline-offset-4 hover:no-underline"
-							>
-								operator desk
-							</Link>
-							.
-						</p>
-					</div>
-					<p className="label-mono text-muted-foreground">
-						Data · OpenDota · {totalPicks.toLocaleString()} picks
-					</p>
-				</div>
+				<ChannelRail aria-label="Rank bracket" items={channels} />
 
-				<ChannelRail aria-label="Rank bracket channel" items={channels} />
-
-				<p className="label-mono text-muted-foreground flex items-center gap-2">
-					Win lamp
-					<LampDot lit />
-					<span className="text-foreground">≥ 50%</span>
-					<LampDot lit={false} />
-					<span className="text-foreground">under 50%</span>
-				</p>
-
-				<LadderBoard
-					title={`${active} channel`}
-					description={
-						active === 'Pro'
-							? 'Professional matches; OpenDota publishes no Immortal-tier pub aggregate'
-							: 'Sorted by pick count over the tracked match sample'
-					}
-				>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead className="text-right">#</TableHead>
-								<TableHead>Hero</TableHead>
-								<TableHead className="text-right">Picks</TableHead>
-								<TableHead className="text-right">Pick share</TableHead>
-								<TableHead className="text-right">Win rate</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{rows.map((row, index) => {
-								const rowStyle: CSSProperties & Record<'--row-i', number> = {
-									'--row-i': index,
-								}
-
-								return (
-									<TableRow key={row.hero} style={rowStyle}>
+				<LadderBoard>
+					<div className="max-h-[26rem] overflow-y-auto">
+						<Table>
+							<TableHeader variant="sticky">
+								<TableRow>
+									<TableHead className="text-right">#</TableHead>
+									<TableHead>Hero</TableHead>
+									<TableHead className="text-right">Picks</TableHead>
+									<TableHead className="text-right">Pick share</TableHead>
+									<TableHead className="text-right">Win rate</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{rows.map((row, index) => (
+									<TableRow key={row.hero}>
 										<TableCell muted numeric className="text-right">
 											{index + 1}
 										</TableCell>
@@ -165,13 +151,13 @@ function MetaPage() {
 											<PickShareGauge share={row.pickShare} max={maxShare} />
 										</TableCell>
 										<TableCell className="text-right">
-											<WinRateLamp winrate={row.winrate} />
+											<WinRate winrate={row.winrate} />
 										</TableCell>
 									</TableRow>
-								)
-							})}
-						</TableBody>
-					</Table>
+								))}
+							</TableBody>
+						</Table>
+					</div>
 				</LadderBoard>
 			</main>
 		</div>

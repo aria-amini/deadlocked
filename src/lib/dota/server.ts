@@ -1,11 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
-import {
-	loadHeroBracketWinrates,
-	loadHeroMeta,
-	loadMatchHistory,
-} from './opendota'
+export { BRACKET_MMR, type Bracket, type MetaBracket } from './brackets'
 
 export const bracketSchema = z.enum([
 	'Herald',
@@ -20,17 +16,27 @@ export const bracketSchema = z.enum([
 
 export type BracketName = z.infer<typeof bracketSchema>
 
+// Handler bodies are stripped from the client bundle, so the OpenDota and
+// database imports must stay inside them; a static import would ship the
+// postgres driver to the browser.
 export const getMetaPage = createServerFn({ method: 'GET' })
 	.validator(
 		z.object({
 			bracket: bracketSchema.default('Archon'),
 		}),
 	)
-	.handler(async ({ data }) => loadHeroMeta(data.bracket))
+	.handler(async ({ data }) => {
+		const { loadHeroMeta } = await import('./opendota')
+
+		return loadHeroMeta(data.bracket)
+	})
 
 export const getStatsPage = createServerFn({ method: 'GET' })
 	.validator(z.object({ accountId: z.number().int().positive() }))
 	.handler(async ({ data }) => {
+		const { loadHeroBracketWinrates, loadMatchHistory } =
+			await import('./opendota')
+
 		const result = await loadMatchHistory(data.accountId)
 
 		if (!result.ok) return result

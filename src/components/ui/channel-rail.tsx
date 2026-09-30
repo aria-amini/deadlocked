@@ -3,8 +3,6 @@ import { useRender } from '@base-ui/react/use-render'
 import { cn } from 'cn'
 import type { ReactNode } from 'react'
 
-import { LampDot } from '@/components/ui/lamp'
-
 type ChannelItemProps = {
 	label: string
 	icon?: ReactNode
@@ -26,7 +24,7 @@ function ChannelItem({
 			{
 				'aria-current': active ? 'page' : undefined,
 				className: cn(
-					'label-mono relative inline-flex h-9 items-center gap-2 border-r px-4 transition-colors last:border-r-0 outline-none focus-visible:bg-muted',
+					'label-mono relative inline-flex h-9 items-center gap-2 border-r px-3 transition-colors last:border-r-0 outline-none focus-visible:bg-muted',
 					active
 						? 'bg-primary text-primary-foreground'
 						: 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -37,7 +35,6 @@ function ChannelItem({
 				children: (
 					<>
 						{icon}
-						{active ? <LampDot lit /> : null}
 						{label}
 					</>
 				),

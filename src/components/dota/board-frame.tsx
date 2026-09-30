@@ -2,14 +2,12 @@ import { Link } from '@tanstack/react-router'
 import { cn } from 'cn'
 import { type ReactNode } from 'react'
 
-import { LampDot } from '@/components/ui/lamp'
-
 const NAV = [
-	{ id: 'ladder', label: 'Ladder', to: '/' },
-	{ id: 'operator', label: 'Operator', to: '/stats' },
+	{ id: 'heroes', label: 'Heroes', to: '/' },
+	{ id: 'matches', label: 'Matches', to: '/stats' },
 ] as const
 
-function BoardHeader({ active }: { active: 'ladder' | 'operator' }) {
+function BoardHeader({ active }: { active: 'heroes' | 'matches' }) {
 	return (
 		<header className="bg-card border-b">
 			<div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-8 px-6">
@@ -17,7 +15,6 @@ function BoardHeader({ active }: { active: 'ladder' | 'operator' }) {
 					to="/"
 					className="flex items-center gap-2.5 outline-none focus-visible:opacity-80"
 				>
-					<LampDot lit pulse className="size-2" />
 					<span className="font-stretch-board text-lg font-bold tracking-wide uppercase">
 						Dota·Visualizer
 					</span>
@@ -39,10 +36,6 @@ function BoardHeader({ active }: { active: 'ladder' | 'operator' }) {
 						</Link>
 					))}
 				</nav>
-				<p className="label-mono text-muted-foreground ml-auto flex items-center gap-2">
-					<LampDot lit pulse />
-					Live
-				</p>
 			</div>
 		</header>
 	)
@@ -77,25 +70,11 @@ function CornerMarks({ className }: { className?: string }) {
 	)
 }
 
-function LadderBoard({
-	title,
-	description,
-	children,
-}: {
-	title: string
-	description: string
-	children: ReactNode
-}) {
+function LadderBoard({ children }: { children: ReactNode }) {
 	return (
 		<section className="bevel border-border bg-card shadow-card relative border">
 			<CornerMarks />
-			<div className="border-border/60 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b px-6 py-4">
-				<h2 className="font-stretch-panel text-sm font-bold tracking-wide uppercase">
-					{title}
-				</h2>
-				<p className="text-muted-foreground text-sm">{description}</p>
-			</div>
-			<div className="lamp-board">{children}</div>
+			<div>{children}</div>
 		</section>
 	)
 }
