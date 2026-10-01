@@ -1,3 +1,8 @@
+import {
+	keepPreviousData,
+	queryOptions,
+	useQuery,
+} from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { cn } from 'cn'
 import { z } from 'zod'
@@ -20,6 +25,7 @@ import {
 import { BRACKET_MMR, type MetaBracket } from '@/lib/dota/brackets'
 import { getMetaPage } from '@/lib/dota/server'
 import type { BracketName } from '@/lib/dota/server'
+import { getQueryClient } from '@/lib/utils/query'
 
 const BRACKETS: Array<BracketName> = [
 	'Herald',
@@ -32,11 +38,28 @@ const BRACKETS: Array<BracketName> = [
 	'Pro',
 ]
 
+const metaQuery = (bracket: BracketName) =>
+	queryOptions({
+		queryKey: ['meta', bracket],
+		queryFn: () => getMetaPage({ data: { bracket } }),
+		staleTime: 5 * 60 * 1000,
+	})
+
 export const Route = createFileRoute('/')({
 	validateSearch: z.object({ bracket: z.enum(BRACKETS).optional() }),
-	loaderDeps: ({ search: { bracket } }) => ({ bracket }),
-	loader: async ({ deps }) =>
-		getMetaPage({ data: { bracket: deps.bracket ?? 'Archon' } }),
+	loaderDeps: ({ search: { bracket } }) => ({ bracket: bracket ?? 'Archon' }),
+	loader: ({ deps }) => {
+		const query = metaQuery(deps.bracket)
+
+		// Await only during SSR so the first paint carries data. Client-side
+		// navigations must not block: the page keeps the previous bracket's
+		// table visible via keepPreviousData while the new one loads.
+		if (typeof document === 'undefined') {
+			return getQueryClient().ensureQueryData(query)
+		}
+
+		void getQueryClient().prefetchQuery(query)
+	},
 	component: MetaPage,
 })
 
@@ -90,14 +113,34 @@ function PickShareGauge({ share, max }: { share: number; max: number }) {
 	)
 }
 
+function BoardProgress() {
+	return (
+		<output
+			aria-label="Loading heroes"
+			className="bg-primary/25 absolute inset-x-0 top-0 z-10 block h-0.5 overflow-hidden"
+		>
+			<div className="bg-primary animate-pending-slide h-full w-1/4 motion-reduce:animate-none" />
+		</output>
+	)
+}
+
 function MetaPage() {
 	const { bracket } = Route.useSearch()
-	const { bracketTotals, heroes: rows } = Route.useLoaderData()
 	const active: BracketName = bracket ?? 'Archon'
+
+	const { data, isPlaceholderData } = useQuery({
+		...metaQuery(active),
+		placeholderData: keepPreviousData,
+	})
+
+	const bracketTotals = data?.bracketTotals
+	const rows = data?.heroes ?? []
+	const activeBracketTotals: Record<MetaBracket, number> =
+		bracketTotals ?? ({} as Record<MetaBracket, number>)
 
 	const channels: Array<ChannelItemProps> = BRACKETS.map((name) => ({
 		label: name,
-		title: bracketTitle(name, bracketTotals),
+		title: bracketTitle(name, activeBracketTotals),
 		icon: (
 			<span
 				className={cn(
@@ -121,7 +164,14 @@ function MetaPage() {
 				<ChannelRail aria-label="Rank bracket" items={channels} />
 
 				<LadderBoard>
-					<div className="max-h-[26rem] overflow-y-auto">
+					<div className="relative">
+						{isPlaceholderData ? <BoardProgress /> : null}
+						<div
+							className={cn(
+								'max-h-[26rem] overflow-y-auto transition-opacity',
+								isPlaceholderData && 'pointer-events-none opacity-50',
+							)}
+						>
 						<Table>
 							<TableHeader variant="sticky">
 								<TableRow>
@@ -157,6 +207,7 @@ function MetaPage() {
 								))}
 							</TableBody>
 						</Table>
+						</div>
 					</div>
 				</LadderBoard>
 			</main>
