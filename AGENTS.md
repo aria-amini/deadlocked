@@ -1,7 +1,7 @@
 # dota-visualizer
 
 Full-stack TanStack Start app: React 19, Vite+, Drizzle, Postgres, Better Auth,
-Tailwind v4, shadcn, Varlock. Docker Compose runs Postgres and MinIO.
+Tailwind v4, shadcn, Varlock. Docker Compose runs Postgres.
 
 The dev server is a pitchfork daemon (`pitchfork.toml`). `mise run bootstrap`
 starts it and verifies the app URL. Interactive shells auto-start it on `cd`.

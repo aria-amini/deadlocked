@@ -1,8 +1,4 @@
-import {
-	keepPreviousData,
-	queryOptions,
-	useQuery,
-} from '@tanstack/react-query'
+import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { cn } from 'cn'
 import { z } from 'zod'
@@ -59,6 +55,8 @@ export const Route = createFileRoute('/')({
 		}
 
 		void getQueryClient().prefetchQuery(query)
+
+		return undefined
 	},
 	component: MetaPage,
 })
@@ -70,13 +68,13 @@ const compactPicks = new Intl.NumberFormat('en-US', {
 
 function bracketTitle(
 	name: BracketName,
-	bracketTotals: Record<MetaBracket, number>,
+	bracketTotals?: Record<MetaBracket, number>,
 ): string {
 	const range = BRACKET_MMR[name]
 
 	return [
 		range ? `${name} · ${range} MMR` : `${name} matches`,
-		`${compactPicks.format(bracketTotals[name])} picks`,
+		`${compactPicks.format(bracketTotals?.[name] ?? 0)} picks`,
 	].join(' · ')
 }
 
@@ -135,12 +133,10 @@ function MetaPage() {
 
 	const bracketTotals = data?.bracketTotals
 	const rows = data?.heroes ?? []
-	const activeBracketTotals: Record<MetaBracket, number> =
-		bracketTotals ?? ({} as Record<MetaBracket, number>)
 
 	const channels: Array<ChannelItemProps> = BRACKETS.map((name) => ({
 		label: name,
-		title: bracketTitle(name, activeBracketTotals),
+		title: bracketTitle(name, bracketTotals),
 		icon: (
 			<span
 				className={cn(
@@ -172,41 +168,41 @@ function MetaPage() {
 								isPlaceholderData && 'pointer-events-none opacity-50',
 							)}
 						>
-						<Table>
-							<TableHeader variant="sticky">
-								<TableRow>
-									<TableHead className="text-right">#</TableHead>
-									<TableHead>Hero</TableHead>
-									<TableHead className="text-right">Picks</TableHead>
-									<TableHead className="text-right">Pick share</TableHead>
-									<TableHead className="text-right">Win rate</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{rows.map((row, index) => (
-									<TableRow key={row.hero}>
-										<TableCell muted numeric className="text-right">
-											{index + 1}
-										</TableCell>
-										<TableCell strong>
-											<span className="flex items-center gap-2">
-												<HeroIcon hero={row.hero} />
-												{row.hero}
-											</span>
-										</TableCell>
-										<TableCell numeric className="text-right">
-											{row.picks.toLocaleString()}
-										</TableCell>
-										<TableCell>
-											<PickShareGauge share={row.pickShare} max={maxShare} />
-										</TableCell>
-										<TableCell className="text-right">
-											<WinRate winrate={row.winrate} />
-										</TableCell>
+							<Table>
+								<TableHeader variant="sticky">
+									<TableRow>
+										<TableHead className="text-right">#</TableHead>
+										<TableHead>Hero</TableHead>
+										<TableHead className="text-right">Picks</TableHead>
+										<TableHead className="text-right">Pick share</TableHead>
+										<TableHead className="text-right">Win rate</TableHead>
 									</TableRow>
-								))}
-							</TableBody>
-						</Table>
+								</TableHeader>
+								<TableBody>
+									{rows.map((row, index) => (
+										<TableRow key={row.hero}>
+											<TableCell muted numeric className="text-right">
+												{index + 1}
+											</TableCell>
+											<TableCell strong>
+												<span className="flex items-center gap-2">
+													<HeroIcon hero={row.hero} />
+													{row.hero}
+												</span>
+											</TableCell>
+											<TableCell numeric className="text-right">
+												{row.picks.toLocaleString()}
+											</TableCell>
+											<TableCell>
+												<PickShareGauge share={row.pickShare} max={maxShare} />
+											</TableCell>
+											<TableCell className="text-right">
+												<WinRate winrate={row.winrate} />
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
 						</div>
 					</div>
 				</LadderBoard>
